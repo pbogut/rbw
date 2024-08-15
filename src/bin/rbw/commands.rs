@@ -851,6 +851,7 @@ enum ListField {
     Id,
     User,
     Folder,
+    Uris,
 }
 
 impl std::convert::TryFrom<&String> for ListField {
@@ -862,6 +863,7 @@ impl std::convert::TryFrom<&String> for ListField {
             "id" => Self::Id,
             "user" => Self::User,
             "folder" => Self::Folder,
+            "uris" => Self::Uris,
             _ => return Err(anyhow::anyhow!("unknown field {}", s)),
         })
     }
@@ -1027,6 +1029,17 @@ pub fn list(fields: &[String]) -> anyhow::Result<()> {
         let values: Vec<String> = fields
             .iter()
             .map(|field| match field {
+                ListField::Uris => match &cipher.data {
+                    DecryptedData::Login { uris, .. } => {
+                        uris.as_ref().map_or_else(String::new, |uris| {
+                            uris.iter()
+                                .map(|uri| uri.uri.clone())
+                                .collect::<Vec<_>>()
+                                .join(" ; ")
+                        })
+                    }
+                    _ => String::new(),
+                },
                 ListField::Name => cipher.name.clone(),
                 ListField::Id => cipher.id.clone(),
                 ListField::User => match &cipher.data {
